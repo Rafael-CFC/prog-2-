@@ -1,0 +1,63 @@
+/* Estilos da Vitrine Comunitária de Garopaba (Roteiro 04) */
+:root {
+  --ifsc-green: #059669;
+  --ifsc-dark-green: #047857;
+  --garopaba-blue: #0284c7;
+  --bg-page: #f8fafc;
+  --text-dark: #0f172a;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-dark);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.font-outfit {
+  font-family: 'Outfit', sans-serif;
+}
+
+.hero-banner {
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+  color: #ffffff;
+  padding: 3rem 0 2.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 3px solid #10b981;
+}
+
+.vitrine-card {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #ffffff;
+}
+
+.vitrine-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.12) !important;
+}
+
+.badge-counter {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.4rem 0.9rem;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 0.25rem rgba(5, 150, 105, 0.2);
+}
+
+footer {
+  margin-top: auto;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  padding: 1.5rem 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
