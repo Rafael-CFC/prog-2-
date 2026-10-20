@@ -1,40 +1,32 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vitrine Comunitária de Garopaba — Roteiro 05 (Flask &amp; SQLite)</title>
+  <title>Vitrine Comunitária de Garopaba — Roteiro 05 (Fetch API & Flask SQLite)</title>
 
   <!-- Bootstrap 5 CSS & Icons & Fonts -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-  <!--  Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
 
   <!-- TOAST DE NOTIFICAÇÃO FLUTUANTE -->
-
   <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1090;">
-    <div id="toastNotificacao" class="toast align-items-center text-bg-success border-0 shadow-lg" role="alert"
-      aria-live="assertive" aria-atomic="true">
+    <div id="toastNotificacao" class="toast align-items-center text-bg-success border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
       <div class="d-flex">
         <div class="toast-body d-flex align-items-center gap-2">
           <i class="bi bi-check-circle-fill fs-5"></i>
           <div>
-            <strong id="toastTitulo" class="d-block">Sucesso!</strong>
+            <strong id="toastTitulo" class="d-block">Notificação do Sistema</strong>
             <span id="toastMensagem">Operação realizada com êxito.</span>
           </div>
         </div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
-          aria-label="Fechar"></button>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
       </div>
     </div>
   </div>
@@ -44,27 +36,24 @@
     <div class="container">
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
         <div>
-          <div class="d-flex align-items-center gap-2 mb-2">
+          <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
             <span class="badge bg-warning text-dark font-outfit fw-bold px-3 py-2 rounded-pill">
-              <i class="bi bi-code-slash me-1"></i> ROTEIRO PRÁTICO 05
+              <i class="bi bi-cloud-arrow-down-fill me-1"></i> ROTEIRO PRÁTICO 05
             </span>
-            <span class="badge bg-white text-success font-outfit fw-bold px-3 py-2 rounded-pill">
-              FETCH API &amp; FLASK + SQLITE
+            <span class="badge bg-white text-dark font-outfit fw-bold px-3 py-2 rounded-pill">
+              FETCH API, ASYNC/AWAIT &amp; FLASK SQLITE
+            </span>
+            <span id="statusApiBadge" class="badge bg-light text-dark px-3 py-2 rounded-pill fw-semibold border">
+              <i class="bi bi-arrow-repeat"></i> Verificando API...
             </span>
           </div>
-          <h1 class="display-6 fw-bold font-outfit mb-1">Vitrine Comunitária de Empreendedores</h1>
-          <p class="mb-2 opacity-75 small">Guia de serviços e comércios locais de Garopaba (SC) — Projeto Base de
-            Extensão Universitária</p>
-          <span id="statusApiBadge"
-            class="badge bg-light text-secondary border px-3 py-2 rounded-pill fw-semibold">
-            <span class="spinner-border spinner-border-sm me-1" role="status"></span> Verificando conexão com a API...
-          </span>
+          <h1 class="display-6 fw-bold font-outfit mb-1">Vitrine Comunitária Conectada</h1>
+          <p class="mb-0 opacity-75 small">Integração do frontend modular com API RESTful em Python Flask e banco de dados SQLite persistente.</p>
         </div>
         <div class="d-flex align-items-center gap-2">
           <span class="badge-counter" id="totalServicosBadge">Carregando...</span>
-          <button class="btn btn-warning text-dark font-outfit fw-bold px-3 py-2 rounded-pill shadow-sm"
-            data-bs-toggle="modal" data-bs-target="#modalCadastro">
-            <i class="bi bi-plus-circle-fill me-1"></i> Divulgar Serviço
+          <button class="btn btn-warning text-dark font-outfit fw-bold px-3 py-2 rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCadastro">
+            <i class="bi bi-plus-circle-fill me-1"></i> Cadastrar Serviço
           </button>
         </div>
       </div>
@@ -73,7 +62,7 @@
 
   <!-- FILTROS & CONTEÚDO PRINCIPAL -->
   <main class="container mb-5">
-
+    
     <!-- BARRA DE CONTROLE E FILTRO -->
     <div class="card border-0 shadow-sm rounded-4 mb-4 p-3 bg-white">
       <div class="row g-3 align-items-center justify-content-between">
@@ -92,19 +81,14 @@
         </div>
 
         <div class="col-md-7 text-md-end text-muted small">
-          <span class="badge bg-light text-dark border me-1"><i class="bi bi-database-fill text-primary me-1"></i>
-            backend/ (Flask + SQLite)</span>
-          <span class="badge bg-light text-dark border me-1"><i class="bi bi-folder-fill text-warning me-1"></i>
-            js/services/</span>
-          <span class="badge bg-light text-dark border me-1"><i
-              class="bi bi-layout-text-window-reverse text-info me-1"></i> js/views/</span>
-          <span class="badge bg-light text-dark border"><i class="bi bi-gear-wide-connected text-success me-1"></i>
-            js/utils/</span>
+          <span class="badge bg-light text-dark border me-1"><i class="bi bi-cpu text-danger me-1"></i> Flask API (Porta 5000)</span>
+          <span class="badge bg-light text-dark border me-1"><i class="bi bi-database text-primary me-1"></i> SQLite (vitrine.db)</span>
+          <span class="badge bg-light text-dark border"><i class="bi bi-arrow-left-right text-success me-1"></i> Fetch API Assíncrona</span>
         </div>
       </div>
     </div>
 
-    <!-- GRID DINÂMICO DE CARDS DA VITRINE -->
+    <!-- GRID DINÂMICO DE CARDS DA VITRINE (COM SPINNER DE CARREGAMENTO) -->
     <div class="row" id="vitrineContainer">
       <!-- Injetado dinamicamente pela vitrineView.js -->
     </div>
@@ -121,17 +105,15 @@
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
-
+        
         <form id="formCadastro" novalidate>
+          <input type="hidden" id="servicoId" value="">
           <div class="modal-body pt-3">
-            <p class="text-muted small mb-3">Preencha as informações do empreendedor local para cadastrar na vitrine:
-            </p>
+            <p class="text-muted small mb-3">Preencha as informações do empreendedor local para gravar no banco de dados SQLite:</p>
 
             <div class="mb-3">
-              <label for="nome" class="form-label small fw-bold text-muted">Nome do Empreendimento / Profissional
-                *</label>
-              <input type="text" class="form-control rounded-3" id="nome" placeholder="Ex: Maré Alta Artesanatos"
-                required>
+              <label for="nome" class="form-label small fw-bold text-muted">Nome do Empreendimento / Profissional *</label>
+              <input type="text" class="form-control rounded-3" id="nome" placeholder="Ex: Maré Alta Artesanatos" required>
               <div class="invalid-feedback">Por favor, informe o nome do empreendimento.</div>
             </div>
 
@@ -139,7 +121,7 @@
               <div class="col-md-6">
                 <label for="categoria" class="form-label small fw-bold text-muted">Categoria *</label>
                 <select class="form-select rounded-3" id="categoria" required>
-                  <option value="" selected disabled>Selecione...</option>
+                  <option value="" disabled selected>Selecione...</option>
                   <option value="Alimentação">Alimentação &amp; Gastronomia</option>
                   <option value="Tecnologia">Tecnologia &amp; Internet</option>
                   <option value="Artesanato">Artesanato &amp; Arte Local</option>
@@ -151,48 +133,38 @@
 
               <div class="col-md-6">
                 <label for="bairro" class="form-label small fw-bold text-muted">Bairro / Localidade *</label>
-                <input type="text" class="form-control rounded-3" id="bairro" placeholder="Ex: Ferrugem, Centro..."
-                  required>
+                <input type="text" class="form-control rounded-3" id="bairro" placeholder="Ex: Ferrugem" required>
                 <div class="invalid-feedback">Informe o bairro em Garopaba.</div>
               </div>
             </div>
 
             <div class="row g-2 mb-3">
               <div class="col-md-6">
-                <label for="precoBase" class="form-label small fw-bold text-muted">Preço Base Referência (R$) *</label>
-                <input type="number" step="0.50" min="0" class="form-control rounded-3" id="precoBase"
-                  placeholder="Ex: 50.00" required>
-                <div class="invalid-feedback">Informe um valor válido em R$.</div>
+                <label for="precoBase" class="form-label small fw-bold text-muted">Preço Base (R$) *</label>
+                <input type="number" class="form-control rounded-3" id="precoBase" placeholder="Ex: 50.00" step="0.01" min="0" required>
+                <div class="invalid-feedback">Informe um valor válido.</div>
               </div>
 
               <div class="col-md-6">
-                <label for="telefone" class="form-label small fw-bold text-muted">WhatsApp / Telefone *</label>
-                <input type="tel" class="form-control rounded-3" id="telefone" placeholder="48999998888" required
-                  pattern="[0-9]{10,11}">
-                <div class="invalid-feedback">Informe um telefone válido com DDD (10 ou 11 dígitos).</div>
+                <label for="telefone" class="form-label small fw-bold text-muted">WhatsApp / Contato *</label>
+                <input type="text" class="form-control rounded-3" id="telefone" placeholder="Ex: 48999998888" maxlength="11" required>
+                <div class="invalid-feedback">Informe o WhatsApp com DDD.</div>
               </div>
             </div>
 
             <div class="mb-3">
-              <label for="descricao" class="form-label small fw-bold text-muted">Descrição dos Serviços e Produtos
-                *</label>
-              <textarea class="form-control rounded-3" id="descricao" rows="3"
-                placeholder="Descreva os produtos, serviços, diferenciais ou formas de atendimento..."
-                required></textarea>
-              <div class="invalid-feedback">Insira uma breve descrição sobre o negócio.</div>
+              <label for="descricao" class="form-label small fw-bold text-muted">Descrição do Serviço ou Produto</label>
+              <textarea class="form-control rounded-3" id="descricao" rows="3" placeholder="Descreva os produtos, horários ou diferenciais do empreendimento..."></textarea>
             </div>
           </div>
 
           <div class="modal-footer border-0 pt-0">
-            <button type="button" class="btn btn-light rounded-pill px-4 text-muted fw-bold"
-              data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-success rounded-pill px-4 font-outfit fw-bold shadow-sm"
-              id="btnSalvar">
-              <i class="bi bi-check2-circle me-1"></i> <span id="btnSalvarTexto">Salvar no Banco</span>
+            <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-success rounded-pill px-4 font-outfit fw-bold" id="btnSalvar">
+              <span id="btnSalvarTexto">Salvar no Banco</span>
             </button>
           </div>
         </form>
-
       </div>
     </div>
   </div>
@@ -200,15 +172,13 @@
   <!-- RODAPÉ INSTITUCIONAL -->
   <footer>
     <div class="container text-center">
-      <p class="mb-0">Instituto Federal de Santa Catarina (IFSC) — Câmpus Garopaba</p>
-      <p class="small text-muted mb-0">CST em Sistemas para a Internet | Programação para a Internet 2 — Projeto Vitrine
-        Comunitária</p>
+      <p class="mb-1"><strong>Programação para a Internet 2 (ProgWeb 2)</strong> — CST em Sistemas para a Internet</p>
+      <p class="mb-0 text-muted">IFSC Câmpus Garopaba &bull; Prof. André Moraes &bull; Módulo 3: Fetch API &amp; Backend Flask (SQLite)</p>
     </div>
   </footer>
 
-  <!-- SCRIPTS BOOTSTRAP BUNDLE & JS MODULAR ES6 -->
+  <!-- Bootstrap 5 JS Bundle & Ponto de Entrada Modular -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>
-
 </html>

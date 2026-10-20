@@ -1,9 +1,22 @@
 // js/services/vitrineService.js
+/**
+ * CAMADA DE SERVIÇOS & INTEGRAÇÃO ASSÍNCRONA COM A API (vitrineService.js)
+ * Unidade Curricular: Programação para a Internet 2 (ProgWeb 2) - IFSC Garopaba
+ * 
+ * Responsável por:
+ *  1. Comunicar-se via HTTP com o backend RESTful em Flask (porta 5000);
+ *  2. Utilizar a Fetch API nativa moderna com async/await;
+ *  3. Prover resiliência (Fallback) automático para o LocalStorage se a API estiver offline
+ *     (garantindo compatibilidade com o GitHub Pages ou quando o Flask estiver desligado).
+ */
+
 const API_BASE_URL = 'http://127.0.0.1:5000/api';
 const STORAGE_KEY = 'garopaba_vitrine_servicos';
 
+// Flag de estado da conexão com a API
 let apiConectada = false;
 
+// Dados modelo semente caso o LocalStorage esteja vazio no modo offline
 export const DADOS_INICIAIS = [
   {
     id: '1',
@@ -34,17 +47,24 @@ export const DADOS_INICIAIS = [
   }
 ];
 
+/**
+ * Retorna o status atual da conexão com o backend Flask
+ */
 export function estaConectadoNaApi() {
   return apiConectada;
 }
 
+/**
+ * Testa ativamente a conectividade com o backend Flask
+ */
 export async function testarConexaoApi() {
   try {
     const resposta = await fetch(`${API_BASE_URL}/status`, {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(2000)
+      signal: AbortSignal.timeout(2000) // Timeout de 2s para resposta rápida
     });
+
     apiConectada = resposta.ok;
     return apiConectada;
   } catch (erro) {
@@ -53,14 +73,22 @@ export async function testarConexaoApi() {
   }
 }
 
-// Rotinas Locais de Contingência (Fallback)
+/**
+ * =========================================================================
+ * ROTINAS LOCAIS DE CONTINGÊNCIA (FALLBACK LOCALSTORAGE)
+ * =========================================================================
+ */
 function obterServicosLocal() {
   const dados = localStorage.getItem(STORAGE_KEY);
   if (!dados) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DADOS_INICIAIS));
     return DADOS_INICIAIS;
   }
-  try { return JSON.parse(dados); } catch (e) { return []; }
+  try {
+    return JSON.parse(dados);
+  } catch (e) {
+    return [];
+  }
 }
 
 function salvarServicoLocal(novoServico) {
@@ -75,6 +103,21 @@ function salvarServicoLocal(novoServico) {
   return servicoCompleto;
 }
 
+function atualizarServicoLocal(id, dados) {
+  const servicos = obterServicosLocal();
+  const index = servicos.findIndex(s => s.id.toString() === id.toString());
+  if (index !== -1) {
+    servicos[index] = {
+      ...servicos[index],
+      ...dados,
+      dataEdicao: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(servicos));
+    return servicos[index];
+  }
+  return null;
+}
+
 function removerServicoLocal(id) {
   const servicos = obterServicosLocal();
   const filtrados = servicos.filter(s => s.id.toString() !== id.toString());
@@ -82,7 +125,16 @@ function removerServicoLocal(id) {
   return filtrados;
 }
 
-// Operações Assíncronas com Fetch API
+/**
+ * =========================================================================
+ * OPERAÇÕES CRUD ASSÍNCRONAS (FETCH API COM FALLBACK)
+ * =========================================================================
+ */
+
+/**
+ * READ (GET): Busca a lista de serviços do backend Flask.
+ * Se o backend estiver indisponível, recorre ao LocalStorage transparente.
+ */
 export async function obterServicos() {
   try {
     const resposta = await fetch(`${API_BASE_URL}/servicos`, {
@@ -90,18 +142,27 @@ export async function obterServicos() {
       headers: { 'Accept': 'application/json' },
       signal: AbortSignal.timeout(3000)
     });
-    if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+
+    if (!resposta.ok) {
+      throw new Error(`Erro HTTP ao carregar serviços: ${resposta.status}`);
+    }
+
     const dados = await resposta.json();
     apiConectada = true;
+
+    // Atualiza o cache local para contingência futura
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
     return dados;
   } catch (erro) {
     apiConectada = false;
-    console.warn('API Flask offline. Ativando contingência LocalStorage:', erro.message);
+    console.warn('[vitrineService] Backend Flask inacessível. Ativando contingência LocalStorage:', erro.message);
     return obterServicosLocal();
   }
 }
 
+/**
+ * CREATE (POST): Envia um novo serviço em formato JSON para ser gravado no banco SQLite.
+ */
 export async function salvarServico(novoServico) {
   try {
     const resposta = await fetch(`${API_BASE_URL}/servicos`, {
@@ -113,20 +174,59 @@ export async function salvarServico(novoServico) {
       body: JSON.stringify(novoServico),
       signal: AbortSignal.timeout(4000)
     });
-    if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+
+    if (!resposta.ok) {
+      throw new Error(`Falha no cadastro via API: ${resposta.status}`);
+    }
+
     const criado = await resposta.json();
     apiConectada = true;
+
+    // Sincroniza cache local
     const servicos = obterServicosLocal();
     servicos.unshift(criado);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(servicos));
+
     return criado;
   } catch (erro) {
     apiConectada = false;
-    console.warn('Falha no envio à API. Salvando localmente:', erro.message);
+    console.warn('[vitrineService] Falha ao enviar para o Flask. Salvando localmente:', erro.message);
     return salvarServicoLocal(novoServico);
   }
 }
 
+/**
+ * UPDATE (PUT): Atualiza os campos de um serviço existente a partir do seu ID.
+ */
+export async function atualizarServico(id, dados) {
+  try {
+    const resposta = await fetch(`${API_BASE_URL}/servicos/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(dados),
+      signal: AbortSignal.timeout(4000)
+    });
+
+    if (!resposta.ok) {
+      throw new Error(`Falha na atualização via API: ${resposta.status}`);
+    }
+
+    apiConectada = true;
+    atualizarServicoLocal(id, dados);
+    return { id, ...dados };
+  } catch (erro) {
+    apiConectada = false;
+    console.warn('[vitrineService] Falha ao atualizar na API. Atualizando localmente:', erro.message);
+    return atualizarServicoLocal(id, dados);
+  }
+}
+
+/**
+ * DELETE (DELETE): Exclui um registro do banco de dados remoto pelo ID.
+ */
 export async function removerServico(id) {
   try {
     const resposta = await fetch(`${API_BASE_URL}/servicos/${id}`, {
@@ -134,13 +234,17 @@ export async function removerServico(id) {
       headers: { 'Accept': 'application/json' },
       signal: AbortSignal.timeout(4000)
     });
-    if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+
+    if (!resposta.ok) {
+      throw new Error(`Falha ao remover na API: ${resposta.status}`);
+    }
+
     apiConectada = true;
     removerServicoLocal(id);
     return true;
   } catch (erro) {
     apiConectada = false;
-    console.warn('Falha na exclusão remota. Removendo localmente:', erro.message);
+    console.warn('[vitrineService] Falha ao excluir na API. Excluindo localmente:', erro.message);
     removerServicoLocal(id);
     return true;
   }

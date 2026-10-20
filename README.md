@@ -13,7 +13,7 @@ backend/
   app.py              # API REST (GET/POST/PUT/DELETE /api/servicos, GET /api/status)
   requirements.txt    # Flask, flask-cors
   vitrine.db          # gerado automaticamente no 1º run (não versionado)
-css/styles.css
+styles.css
 js/
   services/vitrineService.js   # Fetch API + fallback LocalStorage
   views/vitrineView.js         # cards, spinner, badge de conexão, toasts
