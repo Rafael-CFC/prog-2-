@@ -2,4 +2,5 @@ venv/
 **/venv/
 __pycache__/
 *.py[cod]
-backend/vitrine.db.claude/
+backend/vitrine.db
+.claude/
