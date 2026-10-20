@@ -1,176 +1,137 @@
-/**
- * MÓDULO PRINCIPAL DA APLICAÇÃO (main.js)
- * Orquestrador e controlador de eventos da interface.
- * Conecta a camada de dados (vitrineService) com a camada de visualização (vitrineView).
- */
-
+// js/main.js
 import {
   obterServicos,
   salvarServico,
-  atualizarServico,
-  removerServico
-} from '../services/vitrineService.js';
+  removerServico,
+  testarConexaoApi,
+  estaConectadoNaApi
+} from './services/vitrineService.js';
 
 import {
   renderizarCards,
+  exibirSpinner,
+  atualizarStatusConexao,
   exibirToast
 } from './views/vitrineView.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Elementos do DOM
+document.addEventListener('DOMContentLoaded', async () => {
   const form = document.getElementById('formCadastro');
   const container = document.getElementById('vitrineContainer');
   const filtroCategoria = document.getElementById('filtroCategoria');
   const contadorEl = document.getElementById('totalServicosBadge');
+  const statusApiBadge = document.getElementById('statusApiBadge');
   const modalEl = document.getElementById('modalCadastro');
-  const servicoIdInput = document.getElementById('servicoId');
-  const modalTitulo = document.getElementById('modalCadastroLabel');
   const btnSalvarTexto = document.getElementById('btnSalvarTexto');
+  const btnSalvar = document.getElementById('btnSalvar');
 
-  /**
-   * Atualiza a exibição da vitrine aplicando o filtro selecionado
-   */
+  let cacheServicosAtuais = [];
+
   async function atualizarInterface() {
-    const todos = await obterServicos();
-    const categoriaSelecionada = filtroCategoria ? filtroCategoria.value : 'todas';
+    exibirSpinner(container);
 
+    const conectado = await testarConexaoApi();
+    atualizarStatusConexao(conectado, statusApiBadge);
+
+    cacheServicosAtuais = await obterServicos();
+
+    const categoriaSelecionada = filtroCategoria ? filtroCategoria.value : 'todas';
     const servicosFiltrados = categoriaSelecionada === 'todas'
-      ? todos
-      : todos.filter(s => s.categoria === categoriaSelecionada);
+      ? cacheServicosAtuais
+      : cacheServicosAtuais.filter(s => s.categoria === categoriaSelecionada);
 
     renderizarCards(servicosFiltrados, container);
 
     if (contadorEl) {
-      contadorEl.innerText = `${todos.length} Serviços Cadastrados`;
+      contadorEl.innerText = `${cacheServicosAtuais.length} Serviços Cadastrados`;
     }
   }
 
-  // 1. Evento de Filtragem por Categoria
   if (filtroCategoria) {
-    filtroCategoria.addEventListener('change', atualizarInterface);
+    filtroCategoria.addEventListener('change', () => {
+      const categoria = filtroCategoria.value;
+      const filtrados = categoria === 'todas'
+        ? cacheServicosAtuais
+        : cacheServicosAtuais.filter(s => s.categoria === categoria);
+      renderizarCards(filtrados, container);
+    });
   }
 
-  // 2. Renderização Inicial
-  atualizarInterface();
+  // Inicialização assíncrona
+  await atualizarInterface();
 
-  // 3. Reset do Modal ao abrir para novo cadastro
+  // Reset do formulário ao abrir modal
   if (modalEl) {
-    modalEl.addEventListener('show.bs.modal', (e) => {
-      // Se não foi disparado por um botão de edição
-      if (!servicoIdInput.value) {
-        form.reset();
-        form.classList.remove('was-validated');
-        if (modalTitulo) {
-          modalTitulo.innerHTML = '<i class="bi bi-shop text-success me-2"></i>Cadastrar Serviço na Vitrine';
-        }
-        if (btnSalvarTexto) {
-          btnSalvarTexto.innerText = 'Salvar na Vitrine';
-        }
-      }
-    });
-
-    modalEl.addEventListener('hidden.bs.modal', () => {
+    modalEl.addEventListener('show.bs.modal', () => {
       form.reset();
-      servicoIdInput.value = '';
       form.classList.remove('was-validated');
     });
   }
 
-  // 4. Submissão do Formulário (Create e Update)
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  function obterValorCampo(idCampo) {
+    const elemento = document.getElementById(idCampo);
+    if (elemento) {
+      return elemento.value.trim();
+    }
+    return '';
+  }
 
-    // Validação visual nativa do Bootstrap 5
-    if (!form.checkValidity()) {
-      e.stopPropagation();
+  // Cadastro de Novo Serviço via HTTP POST (Função Nomeada)
+  async function cadastrarNovoServico(evento) {
+    evento.preventDefault();
+
+    if (form.checkValidity() === false) {
+      evento.stopPropagation();
       form.classList.add('was-validated');
       return;
     }
 
-    const idAtual = servicoIdInput ? servicoIdInput.value : '';
-    const getVal = (id) => document.getElementById(id).value.trim();
-
     const dados = {
-      nome: getVal('nome'),
+      nome: obterValorCampo('nome'),
       categoria: document.getElementById('categoria').value,
-      bairro: getVal('bairro'),
-      precoBase: parseFloat(getVal('precoBase')) || 0,
-      telefone: getVal('telefone'),
-      descricao: getVal('descricao')
+      bairro: obterValorCampo('bairro'),
+      precoBase: parseFloat(obterValorCampo('precoBase')) || 0,
+      telefone: obterValorCampo('telefone'),
+      descricao: obterValorCampo('descricao')
     };
 
-    const btnSalvar = document.getElementById('btnSalvarModal');
     if (btnSalvar) btnSalvar.disabled = true;
+    if (btnSalvarTexto) btnSalvarTexto.innerText = 'Gravando...';
 
     try {
-      if (idAtual) {
-        await atualizarServico(idAtual, dados);
-        exibirToast('Serviço atualizado com sucesso!', 'success');
-      } else {
-        await salvarServico(dados);
-        exibirToast('Empreendimento cadastrado na vitrine com sucesso!', 'success');
+      await salvarServico(dados);
+
+      let msg = 'Serviço salvo localmente (Modo Offline).';
+      if (estaConectadoNaApi() === true) {
+        msg = 'Serviço gravado no banco de dados SQLite!';
       }
-    } catch (erro) {
-      exibirToast('Não foi possível salvar o serviço. Verifique os dados e tente novamente.', 'danger');
-      return;
-    } finally {
-      if (btnSalvar) btnSalvar.disabled = false;
-    }
+      exibirToast(msg, 'success');
 
-    // Reset e atualização imediata da interface
-    form.reset();
-    servicoIdInput.value = '';
-    form.classList.remove('was-validated');
-
-    // Fecha o modal programaticamente
-    if (modalEl) {
       const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
       modal.hide();
+
+      await atualizarInterface();
+    } catch (erro) {
+      exibirToast('Erro ao processar cadastro.', 'danger');
+    } finally {
+      if (btnSalvar) btnSalvar.disabled = false;
+      if (btnSalvarTexto) btnSalvarTexto.innerText = 'Salvar no Banco';
     }
+  }
 
-    // Atualiza os cards e o contador na tela imediatamente!
-    await atualizarInterface();
-  });
+  form.addEventListener('submit', cadastrarNovoServico);
 
-  // 5. Delegação de Eventos na Vitrine (Editar e Excluir)
-  container.addEventListener('click', async (e) => {
-    // 5.1. Operação Update (Edição)
-    const btnEditar = e.target.closest('.btn-editar');
-    if (btnEditar) {
-      const id = btnEditar.getAttribute('data-id');
-      const item = (await obterServicos()).find(s => s.id.toString() === id);
-
-      if (item) {
-        servicoIdInput.value = item.id;
-        document.getElementById('nome').value = item.nome;
-        document.getElementById('categoria').value = item.categoria;
-        document.getElementById('bairro').value = item.bairro;
-        document.getElementById('precoBase').value = item.precoBase;
-        document.getElementById('telefone').value = item.telefone;
-        document.getElementById('descricao').value = item.descricao;
-
-        if (modalTitulo) {
-          modalTitulo.innerHTML = '<i class="bi bi-pencil-square text-primary me-2"></i>Editar Serviço na Vitrine';
-        }
-        if (btnSalvarTexto) {
-          btnSalvarTexto.innerText = 'Salvar Alterações';
-        }
-
-        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        modal.show();
-      }
-      return;
-    }
-
-    // 5.2. Operação Delete (Exclusão)
-    const btnExcluir = e.target.closest('.btn-excluir');
+  // Exclusão Assíncrona via HTTP DELETE (Função Nomeada)
+  async function tratarExclusaoNaVitrine(evento) {
+    const btnExcluir = evento.target.closest('.btn-excluir');
     if (btnExcluir) {
       const id = btnExcluir.getAttribute('data-id');
-      if (confirm('Deseja realmente remover este serviço da vitrine comunitária?')) {
+      if (confirm('Deseja realmente remover este serviço da vitrine?')) {
         await removerServico(id);
         await atualizarInterface();
-        exibirToast('Serviço removido da vitrine.', 'warning');
+        exibirToast('Serviço excluído da vitrine.', 'warning');
       }
     }
-  });
+  }
+
+  container.addEventListener('click', tratarExclusaoNaVitrine);
 });
